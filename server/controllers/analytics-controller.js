@@ -48,17 +48,21 @@ exports.recommendations = async (req, res) => {
     const byProduct = {};
     for (const c of ins.crossSell) byProduct[c.suggest] = (byProduct[c.suggest] || 0) + c.estAnnualValue;
     const [p, v] = Object.entries(byProduct).sort((a, b) => b[1] - a[1])[0];
+    const total = Object.values(byProduct).reduce((a, b) => a + b, 0);
     recs.push({
       kind: "cross-sell",
-      title: `Cross-sell ${productName(p)} to existing accounts (≈${usd(v)} a year, conservative)`,
+      title: `Cross-sell ${productName(p)} to existing accounts (≈${usd(v)} a year of the ${usd(total)} total across products, conservative)`,
       detail: "Peers in the same segment who buy the same products already buy it. Give the list to regional sales as a quarterly campaign.",
     });
   }
-  if (fc.summary.baselineMape && fc.summary.modelMape) {
+  const ai = readAiForecast();
+  const all = ai?.scorecard?.find((r) => r.group === "All series");
+  if (all) {
     recs.push({
       kind: "forecast",
-      title: `Replace the 6-month average with the seasonal model (error ${fc.summary.baselineMape}% → ${fc.summary.modelMape}%)`,
-      detail: "The model refreshes from SAP B1 order history every month with no spreadsheet work; planners review exceptions only.",
+      title: `Use the self-checking forecast instead of the plain 6-month average (back-test error ${all.currentPracticePct}% → ${all.oursPct}%)`,
+      detail:
+        "The gain is modest on this synthetic data. The value is the safeguard: a smarter model is only used where it beats the average in past tests, and every series is labelled with its method and confidence.",
     });
   }
   recs.push({
@@ -68,3 +72,21 @@ exports.recommendations = async (req, res) => {
   });
   res.json(recs);
 };
+
+// Forecast + AI commentary produced by the Python pipeline (src/build_site_data.py): orders -> back-tested forecast -> checked commentary.
+const fs = require("fs");
+const path = require("path");
+const AI_FILE = path.join(__dirname, "..", "data", "ai-forecast.json");
+const readAiForecast = () => {
+  try {
+    return JSON.parse(fs.readFileSync(AI_FILE, "utf8"));
+  } catch {
+    return null;
+  }
+};
+exports.aiForecast = async (req, res) => {
+  const data = readAiForecast();
+  if (!data) return res.status(404).json({ message: "No forecast file yet. Run: python src/build_site_data.py" });
+  res.json(data);
+};
+exports.readAiForecast = readAiForecast;

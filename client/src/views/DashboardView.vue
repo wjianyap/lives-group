@@ -48,7 +48,7 @@ const speedup = computed(() => (stats.value?.avgCycleDays ? Math.round(stats.val
     <div class="card kpi">
       <div class="label">Average request-to-SAP time</div>
       <div class="value">{{ stats.avgCycleDays ?? "—" }} days</div>
-      <div class="sub good">was ~{{ stats.baselineCycleDays }} days by email<span v-if="speedup"> · {{ speedup }}× faster</span></div>
+      <div class="sub good">brief's example: {{ stats.baselineCycleDays }} days by email<span v-if="speedup"> · ~{{ speedup }}× faster</span> (illustrative, demo data)</div>
     </div>
     <div class="card kpi">
       <div class="label">Average time per approval</div>
@@ -68,7 +68,7 @@ const speedup = computed(() => (stats.value?.avgCycleDays ? Math.round(stats.val
     <div class="card kpi">
       <div class="label">Duplicates stopped at intake</div>
       <div class="value">{{ stats.duplicatesBlocked }}</div>
-      <div class="sub">before reaching an approver</div>
+      <div class="sub">{{ stats.duplicatesBlocked ? "before reaching an approver" : "none yet in this demo: try a near-duplicate customer name in New request" }}</div>
     </div>
   </div>
 
