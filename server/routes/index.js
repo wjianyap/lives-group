@@ -57,6 +57,7 @@ router.post("/master/unmerge", requireLogin, staff, master.unmerge);
 // ---- regional business view ----
 router.get("/analytics/regional", requireLogin, analytics.regional);
 router.get("/analytics/forecasts", requireLogin, analytics.forecasts);
+router.get("/analytics/ai-forecast", requireLogin, analytics.aiForecast);
 router.get("/analytics/insights", requireLogin, analytics.insights);
 router.get("/analytics/pipeline", requireLogin, analytics.pipeline);
 router.get("/analytics/recommendations", requireLogin, analytics.recommendations);

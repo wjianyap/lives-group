@@ -1,0 +1,9 @@
+pandas
+numpy
+statsmodels
+pymongo
+dnspython
+certifi
+python-dotenv
+anthropic   # only needed for the optional live Claude commentary
+pytest

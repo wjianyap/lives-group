@@ -1,0 +1,156 @@
+{
+ "facts_hash": "79ba526459dc11c3",
+ "model": "Claude (written in Claude Code, not a live API call)",
+ "generated_on": "2026-10-27",
+ "commentary": {
+  "headline": "Region demand is forecast at 128338 units over the next 6 months, up 1.8%. Growth sits in Vietnam A and B; Thailand B, Indonesia B and Singapore A soften.",
+  "outlook": [
+   {
+    "country": "Indonesia",
+    "product": "A",
+    "direction": "flat",
+    "explanation": "No sign of change: the forecast is 10070 units over the next 6 months, the same as the last 6. This comes from the 6-month average, so 'flat' means no evidence of a shift, not a prediction of zero change. Past tests show about 12% error.",
+    "calendar_context": "Ramadan is about 8 Feb - 9 Mar 2027 with a long Idul Fitri holiday after; deliveries and orders can slow. Context to check, not a finding from the data."
+   },
+   {
+    "country": "Indonesia",
+    "product": "B",
+    "direction": "down",
+    "explanation": "Demand looks softening: 18840 units forecast over the next 6 months against 20370 in the last 6 (-7.5%), likely range 15917 to 24426. The model used is 12-month average, with high confidence and about 10% error in past tests.",
+    "calendar_context": "Ramadan is about 8 Feb - 9 Mar 2027 with a long Idul Fitri holiday after; deliveries and orders can slow. Context to check, not a finding from the data."
+   },
+   {
+    "country": "Indonesia",
+    "product": "C",
+    "direction": "flat",
+    "explanation": "Very small volume (38 units in the last 6 months, forecast 38). Orders for equipment are lumpy, so treat this as indicative only and do not read growth into it.",
+    "calendar_context": ""
+   },
+   {
+    "country": "Malaysia",
+    "product": "A",
+    "direction": "flat",
+    "explanation": "No sign of change: the forecast is 6908 units over the next 6 months, the same as the last 6. This comes from the 6-month average, so 'flat' means no evidence of a shift, not a prediction of zero change. Past tests show about 6% error.",
+    "calendar_context": "Ramadan is about 8 Feb - 9 Mar 2027 and Hari Raya about 10 Mar 2027; ordering often slows, then catches up. Context to check, not a finding from the data."
+   },
+   {
+    "country": "Malaysia",
+    "product": "B",
+    "direction": "flat",
+    "explanation": "No sign of change: the forecast is 12567 units over the next 6 months, the same as the last 6. This comes from the 6-month average, so 'flat' means no evidence of a shift, not a prediction of zero change. Past tests show about 4% error.",
+    "calendar_context": "Ramadan is about 8 Feb - 9 Mar 2027 and Hari Raya about 10 Mar 2027; ordering often slows, then catches up. Context to check, not a finding from the data."
+   },
+   {
+    "country": "Malaysia",
+    "product": "C",
+    "direction": "flat",
+    "explanation": "Very small volume (41 units in the last 6 months, forecast 41). Orders for equipment are lumpy, so treat this as indicative only and do not read growth into it.",
+    "calendar_context": ""
+   },
+   {
+    "country": "Singapore",
+    "product": "A",
+    "direction": "down",
+    "explanation": "Demand looks softening: 7827 units forecast over the next 6 months against 8104 in the last 6 (-3.4%), likely range 7038 to 8661. The model used is 12-month average, with high confidence and about 5% error in past tests.",
+    "calendar_context": "Chinese New Year is 6 Feb 2027 and shortens working weeks around it. Context to check, not a finding from the data."
+   },
+   {
+    "country": "Singapore",
+    "product": "B",
+    "direction": "flat",
+    "explanation": "Roughly flat: 19306 units forecast over the next 6 months against 19806 in the last 6 (-2.5%), inside the range where we call it unchanged. Past tests show about 4% error.",
+    "calendar_context": "Chinese New Year is 6 Feb 2027 and shortens working weeks around it. Context to check, not a finding from the data."
+   },
+   {
+    "country": "Singapore",
+    "product": "C",
+    "direction": "flat",
+    "explanation": "Very small volume (46 units in the last 6 months, forecast 46). Orders for equipment are lumpy, so treat this as indicative only and do not read growth into it.",
+    "calendar_context": ""
+   },
+   {
+    "country": "Thailand",
+    "product": "A",
+    "direction": "flat",
+    "explanation": "No sign of change: the forecast is 7165 units over the next 6 months, the same as the last 6. This comes from the 6-month average, so 'flat' means no evidence of a shift, not a prediction of zero change. Past tests show about 6% error.",
+    "calendar_context": "Songkran is 13-15 Apr 2027, so customers may order early in the month before it. Context to check, not a finding from the data."
+   },
+   {
+    "country": "Thailand",
+    "product": "B",
+    "direction": "down",
+    "explanation": "Demand looks softening: 10893 units forecast over the next 6 months against 12262 in the last 6 (-11.2%), likely range 6630 to 11298. The model used is damped trend, with high confidence and about 10% error in past tests.",
+    "calendar_context": "Songkran is 13-15 Apr 2027, so customers may order early in the month before it. Context to check, not a finding from the data."
+   },
+   {
+    "country": "Thailand",
+    "product": "C",
+    "direction": "flat",
+    "explanation": "Very small volume (72 units in the last 6 months, forecast 72). Orders for equipment are lumpy, so treat this as indicative only and do not read growth into it.",
+    "calendar_context": ""
+   },
+   {
+    "country": "Vietnam",
+    "product": "A",
+    "direction": "up",
+    "explanation": "Demand looks rising: 11792 units forecast over the next 6 months against 9392 in the last 6 (+25.6%), likely range 11163 to 16333. The model used is damped trend, with medium confidence and about 20% error in past tests.",
+    "calendar_context": "Tet is on 6 Feb 2027, inside the forecast window. Customers often restock before it and order less after; worth checking whether the monthly forecast reflects that."
+   },
+   {
+    "country": "Vietnam",
+    "product": "B",
+    "direction": "up",
+    "explanation": "Demand looks rising: 22709 units forecast over the next 6 months against 19180 in the last 6 (+18.4%), likely range 21059 to 31735. The model used is damped trend, with medium confidence and about 15% error in past tests.",
+    "calendar_context": "Tet is on 6 Feb 2027, inside the forecast window. Customers often restock before it and order less after; worth checking whether the monthly forecast reflects that."
+   },
+   {
+    "country": "Vietnam",
+    "product": "C",
+    "direction": "flat",
+    "explanation": "Very small volume (64 units in the last 6 months, forecast 64). Orders for equipment are lumpy, so treat this as indicative only and do not read growth into it.",
+    "calendar_context": ""
+   }
+  ],
+  "actions": [
+   {
+    "action": "Vietnam A and B: confirm stock cover and supplier lead times now, and plan restocking before Tet on 6 Feb 2027.",
+    "rationale": "Forecast is up 25.6% for A (11792 units vs 9392) and 18.4% for B (22709 vs 19180). Confidence is medium, so plan to the middle of the range, not the top."
+   },
+   {
+    "action": "Thailand B: ask the account team to review the top customers before cutting orders.",
+    "rationale": "Forecast is down 11.2% (10893 units vs 12262), and the whole likely range (6630 to 11298) sits at or below recent volume. A wide range means the cause is worth checking before acting."
+   },
+   {
+    "action": "Indonesia B: check for account issues, pricing pressure or a competitor switch; avoid over-ordering ahead of Ramadan.",
+    "rationale": "Forecast is down 7.5% (18840 units vs 20370) with high confidence."
+   },
+   {
+    "action": "Singapore A: monitor only for now.",
+    "rationale": "Forecast is down 3.4% (7827 units vs 8104), a small change near the point where we call a series flat."
+   },
+   {
+    "action": "Product C in every country: plan project by project, and do not use the forecast percentages.",
+    "rationale": "Volumes are tiny (38 to 72 units per 6 months) and confidence is low, so a few orders swing the result."
+   },
+   {
+    "action": "Malaysia, and the other flat series: keep current planning.",
+    "rationale": "Malaysia A and B are flat with high confidence and only about 6% and 4% error in past tests."
+   },
+   {
+    "action": "Re-run the forecast each month and compare it with what actually arrived.",
+    "rationale": "Past tests show 11.7% error against 12.4% for today's 6-month average. The edge is modest, so tracking real results is how we keep it honest."
+   }
+  ],
+  "supply_notes": [
+   "The data has no stock, lead-time or supplier information, so supply cannot be forecast here. These are checks, not predictions.",
+   "Where demand is rising (Vietnam A and B): confirm supplier lead times and whether Tet closures could delay deliveries, then consider bringing orders forward.",
+   "Where demand is softening (Thailand B, Indonesia B): check open purchase orders and stock cover before reordering, to avoid holding extra stock.",
+   "If Ramadan or Tet shifts customer ordering, a stock buffer before the holiday may be cheaper than expedited shipping afterwards."
+  ],
+  "caveats": [
+   "This is synthetic demo data: the figures show how the pipeline behaves, not real Lives Group demand.",
+   "Calendar events are general knowledge offered as context. The statistics did not find them in the data.",
+   "Where the 6-month average is used, 'flat' means no evidence of change, not a confident prediction that nothing will change."
+  ]
+ }
+}

@@ -7,7 +7,8 @@ import LineChart from "../components/LineChart.vue";
 import Icon from "../components/Icon.vue";
 
 const regional = ref(null);
-const fc = ref(null);
+const ai = ref(null); // forecast + AI commentary from the Python pipeline
+const aiError = ref("");
 const ins = ref(null);
 const pipeline = ref([]);
 const recs = ref([]);
@@ -17,18 +18,23 @@ const sel = ref({ country: null, product: null }); // null = all
 onMounted(async () => {
   const [a, b, c, d, e] = await Promise.all([
     api.get("/analytics/regional"),
-    api.get("/analytics/forecasts"),
+    api.get("/analytics/ai-forecast").catch((err) => {
+      aiError.value = err.message;
+      return null;
+    }),
     api.get("/analytics/insights"),
     api.get("/analytics/pipeline"),
     api.get("/analytics/recommendations"),
   ]);
   regional.value = a;
-  fc.value = b;
+  ai.value = b;
   ins.value = c;
   pipeline.value = d;
   recs.value = e;
 });
 
+// tiny-volume series (e.g. equipment): percentages are noise, so no colour and an explicit tag
+const lowVol = (c, p) => ai.value?.series.find((r) => r.country === c && r.product === p)?.indicativeOnly === true;
 const cell = (c, p) => regional.value.matrix.find((r) => r.country === c && r.product === p);
 const sum = (xs) => xs.reduce((a, b) => a + b, 0);
 
@@ -44,18 +50,28 @@ function show(r) {
 }
 
 // ----- selected series for the chart -----
+const FLAT_BAND = 3; // +/- % we call "flat" (same rule the pipeline uses)
+const direction = (r) => (r.changePct === null || Math.abs(r.changePct) < FLAT_BAND ? "flat" : r.changePct > 0 ? "up" : "down");
+const arrow = { up: "▲ up", down: "▼ down", flat: "● flat" };
+const tone = { up: "t-good", down: "t-bad", flat: "t-muted" };
+const confTone = { high: "t-good", medium: "t-warn", low: "t-bad" };
+
 const selected = computed(() => {
-  if (!fc.value) return null;
-  const rows = fc.value.series.filter((s) => (!sel.value.country || s.country === sel.value.country) && (!sel.value.product || s.product === sel.value.product));
-  const add = (key) => rows[0][key].map((_, i) => sum(rows.map((r) => r[key][i])));
-  const single = rows.length === 1 ? rows[0] : null;
+  if (!ai.value) return null;
+  const rows = ai.value.series.filter((s) => (!sel.value.country || s.country === sel.value.country) && (!sel.value.product || s.product === sel.value.product));
+  if (!rows.length) return null;
+  const months = [...new Set(rows.flatMap((r) => r.historyMonths))].sort();
+  const at = (r, i) => r.historyMonths.indexOf(months[i]);
   return {
     title: `${sel.value.country ? countryName(sel.value.country) : "All five countries"} · ${sel.value.product ? productName(sel.value.product) : "Products A–C"}`,
-    history: add("history"),
-    forecast: add("forecast"),
-    baseline: add("baselineForecast"),
-    band: rows[0].band.map((_, i) => [sum(rows.map((r) => r.band[i][0])), sum(rows.map((r) => r.band[i][1]))]),
-    single,
+    months,
+    future: rows[0].forecastMonths,
+    history: months.map((_, i) => sum(rows.map((r) => (at(r, i) >= 0 ? r.history[at(r, i)] : 0)))),
+    forecast: rows[0].forecast.map((_, i) => sum(rows.map((r) => r.forecast[i]))),
+    baseline: rows[0].baseline.map((_, i) => sum(rows.map((r) => r.baseline[i]))),
+    // adding the ranges of several series overstates the width a little (it assumes they all miss together)
+    band: rows[0].forecast.map((_, i) => [sum(rows.map((r) => r.low80[i])), sum(rows.map((r) => r.high80[i]))]),
+    single: rows.length === 1 ? rows[0] : null,
     rows,
   };
 });
@@ -64,34 +80,24 @@ const chart = computed(() => {
   const s = selected.value;
   if (!s) return null;
   const n = s.history.length;
-  const labels = [...fc.value.months, ...fc.value.future].map(monthLabel);
-  const pad = (arr, before, after) => [...Array(before).fill(null), ...arr, ...Array(after).fill(null)];
+  const labels = [...s.months, ...s.future].map(monthLabel);
   const last = s.history[n - 1];
   return {
     labels,
     marker: n - 1,
     series: [
-      { label: "Actual orders (units)", color: "#0f766e", values: pad(s.history, 0, 6) },
-      { label: "Seasonal AI forecast", color: "#6d28d9", values: [...Array(n - 1).fill(null), last, ...s.forecast], band: [...Array(n).fill(null), ...s.band] },
+      { label: "Actual orders (units)", color: "#0f766e", values: [...s.history, ...Array(s.future.length).fill(null)] },
+      { label: "Self-checking forecast", color: "#6d28d9", values: [...Array(n - 1).fill(null), last, ...s.forecast], band: [...Array(n).fill(null), ...s.band] },
       { label: "6-month average (today's method)", color: "#94a3b8", dashed: true, values: [...Array(n - 1).fill(null), last, ...s.baseline] },
     ],
   };
 });
 
-const backtest = computed(() => {
-  const s = selected.value;
-  if (!s?.single) return null;
-  const f = s.single;
-  const months = fc.value.holdoutMonths.map(monthLabel);
-  return { f, months };
-});
-
-const winners = computed(() => {
-  if (!fc.value) return {};
-  const out = { hw: 0, ma6: 0, ma12: 0 };
-  for (const s of fc.value.series) out[s.best]++;
-  return out;
-});
+const allSeries = computed(() => ai.value?.series ?? []);
+const overall = computed(() => ai.value?.scorecard?.find((r) => r.group === "All series") ?? null);
+const sourceLabel = computed(
+  () => ({ "claude-pregenerated": "Written by Claude ahead of time", claude: "Live Claude", template: "Template (no AI)" })[ai.value?.commentary?.source] || "Commentary",
+);
 
 function choose(c, p) {
   sel.value = { country: c, product: p };
@@ -102,7 +108,8 @@ const recIcon = { grow: "trend", fix: "alert", retain: "users", "cross-sell": "s
 </script>
 
 <template>
-  <div v-if="!regional || !fc || !ins" class="empty">Crunching the numbers…</div>
+  <div v-if="aiError" class="empty">{{ aiError }}</div>
+  <div v-else-if="!regional || !ai || !ins" class="empty">Crunching the numbers…</div>
   <template v-else>
     <div class="page-head">
       <div>
@@ -135,8 +142,8 @@ const recIcon = { grow: "trend", fix: "alert", retain: "users", "cross-sell": "s
       </div>
       <div class="card kpi">
         <div class="label">Forecast error (back-test)</div>
-        <div class="value">{{ fc.summary.modelMape }}%</div>
-        <div class="sub good">vs {{ fc.summary.baselineMape }}% with the 6-month average</div>
+        <div class="value">{{ overall ? overall.oursPct + "%" : "–" }}</div>
+        <div class="sub">vs {{ overall ? overall.currentPracticePct + "%" : "–" }} with the 6-month average · last 6 months, unseen when the method was chosen</div>
       </div>
       <div class="card kpi">
         <div class="label">Annual value at risk</div>
@@ -144,7 +151,7 @@ const recIcon = { grow: "trend", fix: "alert", retain: "users", "cross-sell": "s
         <div class="sub">{{ ins.churn.length }} customers dropping off</div>
       </div>
       <div class="card kpi">
-        <div class="label">Cross-sell opportunity</div>
+        <div class="label">Cross-sell opportunity (all products)</div>
         <div class="value">{{ usdK(ins.totals.crossSellValue) }}</div>
         <div class="sub">per year, conservative</div>
       </div>
@@ -181,12 +188,13 @@ const recIcon = { grow: "trend", fix: "alert", retain: "users", "cross-sell": "s
                 v-for="p in regional.products"
                 :key="p.code"
                 class="num cellbtn"
-                :style="metric.startsWith('growth') ? heat(cell(c.code, p.code)[metric]) : {}"
+                :style="metric.startsWith('growth') && !lowVol(c.code, p.code) ? heat(cell(c.code, p.code)[metric]) : lowVol(c.code, p.code) ? { opacity: 0.6 } : {}"
                 :class="{ on: sel.country === c.code && sel.product === p.code }"
                 @click="choose(c.code, p.code)"
               >
                 <strong>{{ show(cell(c.code, p.code)) }}</strong>
                 <div class="small muted">{{ metric.startsWith("growth") ? `${num(cell(c.code, p.code).units)} u` : pct(cell(c.code, p.code).growthYoY) }}</div>
+                <div v-if="lowVol(c.code, p.code)" class="small" style="color: var(--warn)">low volume: indicative</div>
               </td>
               <td class="num cellbtn" :style="metric.startsWith('growth') ? heat(regional.byCountry[c.code][metric]) : {}" @click="choose(c.code, null)">
                 <strong>{{ show(regional.byCountry[c.code]) }}</strong>
@@ -221,43 +229,112 @@ const recIcon = { grow: "trend", fix: "alert", retain: "users", "cross-sell": "s
         <div class="card-head">
           <div>
             <h2>{{ selected.title }}</h2>
-            <p>24 months of orders, then the next 6 months. The shaded area is the ~80% range.</p>
+            <p>Orders to date, then the next 6 months. The shaded area is the ~80% range{{ selected.single ? '' : ' (summed across series, so slightly wider than the true range)' }}.</p>
           </div>
           <button v-if="sel.country || sel.product" class="btn sm" @click="sel = { country: null, product: null }">Show all</button>
         </div>
         <div class="card-body"><LineChart v-bind="chart" :height="280" /></div>
       </div>
       <div class="card">
-        <div class="card-head"><h3>How the forecast is chosen</h3></div>
+        <div class="card-head"><h3>How this forecast was chosen</h3></div>
         <div class="card-body stack small">
-          <p>
-            For every country × product, three methods are trained on months 1–18 and tested on the last 6 months they never saw.
-            The most accurate one is used for the real forecast, and this re-runs every month as SAP B1 order history comes in.
-          </p>
-          <div v-if="backtest" class="table-wrap">
-            <table>
-              <thead><tr><th>Method</th><th class="num">Error (MAPE)</th></tr></thead>
-              <tbody>
-                <tr v-for="(m, k) in backtest.f.methods" :key="k" :class="{ best: k === backtest.f.best }">
-                  <td>{{ m.label }} <span v-if="k === backtest.f.best" class="badge plain t-good">chosen</span></td>
-                  <td class="num">{{ m.mape }}%</td>
-                </tr>
-              </tbody>
-            </table>
-            <p class="muted mt8">
-              Next 6 months: <strong>{{ num(backtest.f.nextHalfUnits) }} units</strong> ({{ pct(backtest.f.outlookPct) }} vs the last 6).
-              <span v-if="backtest.f.product === 'C'"> Equipment orders are few and lumpy, so for Product C the RFQ pipeline is the better lead indicator.</span>
+          <template v-if="selected.single">
+            <div>
+              <span class="badge plain" :class="tone[direction(selected.single)]">{{ arrow[direction(selected.single)] }}</span>
+              <span class="badge plain" :class="confTone[selected.single.confidence]" style="margin-left: 6px">{{ selected.single.confidence }} confidence</span>
+              <span v-if="selected.single.indicativeOnly" class="badge plain t-warn" style="margin-left: 6px">low volume: indicative only</span>
+            </div>
+            <p>{{ selected.single.reason }}</p>
+            <p class="muted">
+              Next 6 months: <strong>{{ num(selected.single.unitsNext6) }} units</strong> ({{ pct(selected.single.changePct) }} vs the last 6).
+              Today's 6-month average would say {{ num(selected.single.unitsCurrentPractice) }}.
+              <span v-if="selected.single.product === 'C'"> Equipment orders are few and lumpy, so the RFQ pipeline is the better lead indicator for Product C.</span>
             </p>
-          </div>
-          <div v-else>
-            <p>Across all 15 country × product series:</p>
-            <ul style="margin: 6px 0; padding-left: 18px">
-              <li>Seasonal model (Holt-Winters) chosen for <strong>{{ winners.hw }}</strong></li>
-              <li>6-month average for <strong>{{ winners.ma6 }}</strong>, 12-month average for <strong>{{ winners.ma12 }}</strong> (flat, stable demand)</li>
-            </ul>
-            <p>Volume-weighted error falls from <strong>{{ fc.summary.baselineMape }}%</strong> to <strong>{{ fc.summary.modelMape }}%</strong>. Click a cell to see one series.</p>
+          </template>
+          <template v-else>
+            <p>
+              Every series is tested by replaying history: forecast the next 3 months from many past dates, then compare with what really happened.
+              A smarter model is used only if it beats the 6-month average by at least 10% in those tests; otherwise the average is kept.
+              The scores below are on the last 6 months, which were hidden when the method was chosen.
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Group</th><th class="num">6-month avg</th><th class="num">Ours</th><th class="num">No worse</th></tr></thead>
+                <tbody>
+                  <tr v-for="r in ai.scorecard" :key="r.group">
+                    <td>{{ r.group }}</td>
+                    <td class="num">{{ r.currentPracticePct }}%</td>
+                    <td class="num strong">{{ r.oursPct }}%</td>
+                    <td class="num muted">{{ r.noWorse }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="muted">Error = total miss as a share of total units (lower is better). Click a cell or a row to see one series.</p>
+          </template>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- AI outlook: numbers from the statistical forecast, words from Claude, checked in code -->
+    <div class="card mt16">
+      <div class="card-head" style="flex-wrap: wrap">
+        <div>
+          <h2>AI outlook &amp; actions</h2>
+          <p>{{ ai.commentary.note }}</p>
+        </div>
+        <span class="badge plain t-accent">{{ sourceLabel }}<template v-if="ai.commentary.generated_on"> · {{ ai.commentary.generated_on }}</template></span>
+      </div>
+      <div class="card-body stack">
+        <p class="strong" style="font-size: 15px">{{ ai.commentary.content.headline }}</p>
+        <div class="grid g2">
+          <div v-for="a in ai.commentary.content.actions" :key="a.action" class="rec">
+            <Icon name="sparkle" :size="20" />
+            <div>
+              <strong>{{ a.action }}</strong>
+              <p class="small muted mt8">{{ a.rationale }}</p>
+            </div>
           </div>
         </div>
+        <div>
+          <h3>Supply checks (precautions, not forecasts)</h3>
+          <ul class="small" style="margin: 6px 0; padding-left: 18px">
+            <li v-for="n in ai.commentary.content.supply_notes" :key="n">{{ n }}</li>
+          </ul>
+        </div>
+        <p class="small muted">{{ ai.commentary.content.caveats.join(" ") }}</p>
+      </div>
+    </div>
+
+    <!-- every series with direction, method and confidence -->
+    <div class="card mt16">
+      <div class="card-head">
+        <div>
+          <h2>Forecast by country × product</h2>
+          <p>Next 6 months vs the last 6 ({{ monthLabel(ai.series[0].forecastMonths[0]) }} – {{ monthLabel(ai.series[0].forecastMonths.at(-1)) }}). Low-volume series are greyed out: their percentages are noise.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Country</th><th>Product</th><th class="num">Last 6 months</th><th class="num">Next 6 months</th><th class="num">Change</th><th>Method</th><th>Confidence</th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in allSeries" :key="r.country + r.product" class="cellbtn" :style="r.indicativeOnly ? { opacity: 0.6 } : {}" @click="choose(r.country, r.product)">
+              <td class="strong">{{ countryName(r.country) }}</td>
+              <td>{{ productName(r.product) }}</td>
+              <td class="num">{{ num(r.unitsLast6) }}</td>
+              <td class="num strong">{{ num(r.unitsNext6) }}</td>
+              <td class="num">
+                <span class="badge plain" :class="r.indicativeOnly ? 't-muted' : tone[direction(r)]">{{ r.indicativeOnly ? "indicative" : arrow[direction(r)] }}</span>
+                <span class="small muted"> {{ pct(r.changePct) }}</span>
+              </td>
+              <td class="small">{{ r.method.replace(" (current practice)", "") }}</td>
+              <td><span class="badge plain" :class="confTone[r.confidence]">{{ r.confidence }}</span></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -306,7 +383,7 @@ const recIcon = { grow: "trend", fix: "alert", retain: "users", "cross-sell": "s
         <div class="card-head">
           <div>
             <h2>Cross-sell: next product to offer</h2>
-            <p>Peers in the same segment that buy the same products already buy this</p>
+            <p>Peers in the same segment that buy the same products already buy this. The estimate is half of a typical peer's annual spend on it, so customers in one segment share a figure.</p>
           </div>
         </div>
         <div class="table-wrap" style="max-height: 420px; overflow: auto">
@@ -377,4 +454,6 @@ const recIcon = { grow: "trend", fix: "alert", retain: "users", "cross-sell": "s
 .rec { display: flex; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 9px; }
 .rec svg { color: var(--brand); flex: none; margin-top: 2px; }
 tr.best td { background: var(--good-bg); }
+tr.cellbtn { cursor: pointer; }
+tr.cellbtn:hover td { background: var(--brand-50, #f0fdfa); }
 </style>
