@@ -42,3 +42,8 @@ For one-origin hosting, `npm run build` in `client/` and the Express server serv
 | Regional business view | Country × product units, value, YoY growth & 6-month momentum (Nov 2025–Oct 2026), drop-off risk, cross-sell, recommended actions |
 
 Assumption: the five countries are SG, MY, ID, TH, VN (see `server/config/constants.js`).
+
+## Forecasting pipeline (Python)
+
+Orders in MongoDB -> self-checking forecaster -> `server/data/ai-forecast.json` -> Regional view. See [docs/FORECASTING.md](docs/FORECASTING.md).
+Refresh the forecast: `python src/build_site_data.py`.
