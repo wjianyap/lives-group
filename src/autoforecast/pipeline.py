@@ -102,24 +102,37 @@ def run(panel: dict, horizon: int = 6, eval_horizon: int = 3, holdout: int = 6, 
         prof = profile(y)
         flags = prof["flags"]
 
-        # --- 1. evaluation pass: choose without seeing the holdout, then score on it ---
+        # --- 1. evaluation pass: walk forward. At each past date from n-holdout on, choose a method using only data
+        # before that date, forecast, and score against what really happened. Choosing afresh at every date means one
+        # lucky or unlucky window cannot decide the result. ---
         n_sel = n - holdout
-        sel_e = _select(y[:max(n_sel, 0)], eval_horizon, _eligible(y, flags, max(n_sel, 0)), margin)
         origins_r = list(range(n_sel, n - eval_horizon + 1)) if n_sel >= 1 else []
-        if origins_r:
-            row = {"country": country, "product": product, "chosen": sel_e["chosen"], "verified": sel_e["verified"]}
-            for m in _eligible(y, flags, n_sel) if "low_volume" not in flags else [m for m in METHODS if m.kind == "baseline" and n_sel >= m.min_history]:
-                A, P = rolling(y, m.fn, eval_horizon, origins_r)
-                row[f"abs_{m.name}"] = np.abs(A - P).sum()
-                row["actual"] = A.sum()
-                if m.name == sel_e["chosen"]:  # the chosen method's range is built only from pre-holdout errors
-                    lo, hi = interval_offsets(sel_e["residuals"], eval_horizon, eval_horizon, float(np.std(y[:n_sel][-6:])))
-                    row["covered"] = float(((A >= P + lo) & (A <= P + hi)).mean())
-            if f"abs_{sel_e['chosen']}" not in row:  # chosen fell back to a baseline that could not be scored
-                row["abs_" + sel_e["chosen"]] = np.nan
-            row["abs_auto"] = row.get(f"abs_{sel_e['chosen']}", np.nan)
-            if "actual" in row:  # nothing could be scored (history too short): leave out of the scorecard
-                eval_rows.append(row)
+        acc = {"abs_auto": 0.0, "actual": 0.0, "abs_ma6": 0.0, "abs_ma12": 0.0, "hit": 0.0, "cells": 0, "wins": 0, "windows": 0, "verified": False, "picked": []}
+        for t in origins_r:
+            a = y[t:t + eval_horizon]
+            sel_t = _select(y[:t], eval_horizon, _eligible(y, flags, t), margin)
+            try:
+                p_auto = BY_NAME[sel_t["chosen"]].fn(y[:t], eval_horizon)
+                p6, p12 = BY_NAME["ma6"].fn(y[:t], eval_horizon), BY_NAME["ma12"].fn(y[:t], eval_horizon)
+            except Exception:
+                continue  # history too short to forecast at this date: leave the date out
+            lo, hi = interval_offsets(sel_t["residuals"], eval_horizon, eval_horizon, float(np.std(y[:t][-6:])))
+            acc["abs_auto"] += np.abs(a - p_auto).sum()
+            acc["abs_ma6"] += np.abs(a - p6).sum()
+            acc["abs_ma12"] += np.abs(a - p12).sum()
+            acc["actual"] += a.sum()
+            acc["hit"] += ((a >= p_auto + lo) & (a <= p_auto + hi)).sum()
+            acc["cells"] += len(a)
+            acc["windows"] += 1
+            acc["wins"] += int(np.abs(a - p_auto).sum() <= np.abs(a - p6).sum() * 1.0001)
+            acc["verified"] = acc["verified"] or sel_t["verified"]
+            acc["picked"].append(sel_t["chosen"])
+        if acc["windows"]:  # nothing scored (history too short): leave out of the scorecard
+            eval_rows.append({"country": country, "product": product, "verified": acc["verified"],
+                              "chosen": max(set(acc["picked"]), key=acc["picked"].count),
+                              "abs_ma6": acc["abs_ma6"], "abs_ma12": acc["abs_ma12"], "abs_auto": acc["abs_auto"],
+                              "actual": acc["actual"], "covered": acc["hit"] / acc["cells"],
+                              "windows": acc["windows"], "wins": acc["wins"]})
 
         # --- 2. production pass: choose with everything, forecast ahead ---
         sel = _select(y, eval_horizon, _eligible(y, flags, n), margin)
@@ -155,6 +168,7 @@ def _scorecard(ev: pd.DataFrame) -> pd.DataFrame:
             both = g.dropna(subset=[c, "actual"])
             r[name] = both[c].sum() / both["actual"].sum() if both["actual"].sum() > 0 else np.nan
         r["series where ours is no worse than 6-month avg"] = f"{int((g['abs_auto'] <= g['abs_ma6'] * 1.0001).sum())}/{len(g)}"
+        r["past dates where ours was no worse"] = f"{int(g['wins'].sum())}/{int(g['windows'].sum())}" if "wins" in g else None
         r["80% range covered the actuals"] = g["covered"].mean() if "covered" in g else np.nan
         rows.append(r)
     return pd.DataFrame(rows)

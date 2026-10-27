@@ -27,7 +27,7 @@ Credentials live only in git-ignored files (`server/config.env`, `.env`). Never 
 | 6 Explain | Forecast, 80% range, method, confidence and a plain-English reason per series. |
 
 Measure: WAPE = total miss / total units (not MAPE, which explodes on tiny months).
-Honest evaluation: methods are chosen using only data before the last 6 months, then scored on those 6 months.
+Honest evaluation (walk-forward): at each of the last 4 forecast dates, the method is chosen using only data before that date, then scored on the next 3 months. 15 series x 4 dates = 60 tests; ours was no worse than the 6-month average in 56 of them.
 
 ## AI commentary
 
@@ -44,7 +44,7 @@ Failures fall back to a template, so the demo never depends on the network.
 
 | Group | 6-month average (today) | This forecaster |
 |---|---|---|
-| All series | 12.4% | 11.7% |
+| All series | 12.4% | 11.8% |
 | Product A | 12.8% | 12.6% |
 | Product B | 12.1% | 11.2% |
 | Product C (tiny volumes) | 35.8% | 35.8% |
