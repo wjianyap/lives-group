@@ -20,8 +20,11 @@ exports.recommendations = async (req, res) => {
   const bottom = [...cells].sort((a, b) => a.growthYoY - b.growthYoY).slice(0, 2);
 
   for (const t of top) {
-    const f = fc.series.find((s) => s.country === t.country && s.product === t.product);
-    const gap = f.nextHalfUnits - f.baselineForecast.reduce((a, b) => a + b, 0);
+    // use the same forecast the page shows (Python pipeline); fall back to the older JS forecast only if that file is missing
+    const a = readAiForecast()?.series.find((s) => s.country === t.country && s.product === t.product);
+    const old = fc.series.find((s) => s.country === t.country && s.product === t.product);
+    const f = a ? { nextHalfUnits: a.unitsNext6, baseline: a.unitsCurrentPractice } : { nextHalfUnits: old.nextHalfUnits, baseline: old.baselineForecast.reduce((x, y) => x + y, 0) };
+    const gap = f.nextHalfUnits - f.baseline;
     recs.push({
       kind: "grow",
       title: `Back the growth in ${countryName(t.country)} – ${productName(t.product)} (+${t.growthYoY}% year-on-year)`,
