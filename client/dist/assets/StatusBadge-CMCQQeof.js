@@ -1,1 +1,0 @@
-import{j as e,c as n,t as r,m as t,S as s,q as l}from"./index-ZuTo4mYd.js";const m={__name:"StatusBadge",props:{status:String},setup(a){return(c,o)=>(e(),n("span",{class:l(["badge",`t-${(t(s)[a.status]||t(s).draft).tone}`])},r((t(s)[a.status]||{label:a.status}).label),3))}};export{m as _};
