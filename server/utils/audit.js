@@ -25,7 +25,7 @@ exports.log = async function (request, action, actor, details, at = new Date()) 
     action,
     actor: actor?._id || actor?.id || null,
     actorName: actor?.name || "System",
-    // round-trip through JSON so what we hash is exactly what MongoDB stores (no undefined values)
+    // round-trip through JSON so what we hash is exactly what the JSON file stores (no undefined values)
     details: details === undefined || details === null ? null : JSON.parse(JSON.stringify(details)),
     at,
     prevHash: last ? last.hash : "GENESIS",

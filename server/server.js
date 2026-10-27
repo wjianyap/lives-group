@@ -3,9 +3,9 @@ const dotenv = require("dotenv");
 dotenv.config({ path: path.join(__dirname, "config.env") });
 
 const express = require("express");
-const mongoose = require("mongoose");
 const session = require("express-session");
-const MongoStore = require("connect-mongo");
+const store = require("./db/store");
+const JsonSessionStore = require("./db/session-store");
 const { runReminders } = require("./services/workflow");
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -29,19 +29,14 @@ app.use((req, res, next) => {
 });
 
 async function start() {
-  if (!process.env.DB) {
-    console.error("Missing DB (MongoDB connection string) in server/config.env");
-    process.exit(1);
-  }
-  await mongoose.connect(process.env.DB, { dbName: process.env.DB_NAME || "lives_mdm" });
-  console.log(`MongoDB connected (database "${mongoose.connection.name}")`);
+  console.log(`Data folder: ${store.dir}`);
 
   app.use(
     session({
       secret: process.env.SECRET || "dev-only-secret-change-me",
       resave: false,
       saveUninitialized: false,
-      store: MongoStore.create({ client: mongoose.connection.getClient(), dbName: mongoose.connection.name, collectionName: "sessions" }),
+      store: new JsonSessionStore(),
       cookie: { httpOnly: true, sameSite: "lax", secure: isProduction, maxAge: 1000 * 60 * 60 * 8 },
     }),
   );

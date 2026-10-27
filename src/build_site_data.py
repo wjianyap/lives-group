@@ -1,14 +1,13 @@
-"""Orders (MongoDB, read-only) -> self-checking forecaster -> AI commentary -> server/data/ai-forecast.json,
-the file the website's Regional view reads.
+"""Orders (server/data/db/purchase_docs.json, read-only) -> self-checking forecaster -> AI commentary ->
+server/data/ai-forecast.json, the file the website's Regional view reads.
 
 Usage (from repo root):
-    python src/build_site_data.py                      # reads MongoDB using DB=... from server/config.env
-    python src/build_site_data.py --csv orders.csv     # or any order file, no database needed
+    python src/build_site_data.py                      # reads the website's JSON database
+    python src/build_site_data.py --csv orders.csv     # or any order file
 """
 import argparse
 import datetime
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -20,7 +19,7 @@ from autoforecast import build_panel, load_orders, run  # noqa: E402
 from autoforecast.narrative import generate  # noqa: E402
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--csv", help="read this file instead of MongoDB")
+ap.add_argument("--csv", help="read this file instead of the website's purchase_docs.json")
 ap.add_argument("--out", default=str(ROOT / "server" / "data" / "ai-forecast.json"))
 ap.add_argument("--commentary", default=str(ROOT / "outputs" / "commentary_pregenerated.json"))
 ap.add_argument("--horizon", type=int, default=6)
@@ -28,23 +27,22 @@ args = ap.parse_args()
 
 try:
     from dotenv import load_dotenv
-    load_dotenv(ROOT / ".env")                    # ANTHROPIC_API_KEY (optional), git-ignored
-    load_dotenv(ROOT / "server" / "config.env")   # DB connection string used by the website's server
+    load_dotenv(ROOT / ".env")  # ANTHROPIC_API_KEY (optional), git-ignored
 except ImportError:
     pass
 
 
-def read_mongo() -> pd.DataFrame:
-    import certifi  # macOS Python often lacks trusted CA certificates; certifi supplies them (verification stays ON)
-    from pymongo import MongoClient
-    client = MongoClient(os.environ["DB"], serverSelectionTimeoutMS=10000, tlsCAFile=certifi.where())
-    col = client[os.environ.get("DB_NAME", "lives_mdm")]["purchase_docs"]
-    rows = list(col.find({}, {"_id": 0, "docType": 1, "country": 1, "product": 1, "month": 1, "qty": 1}))
-    return pd.DataFrame(rows).rename(columns={"docType": "record_type"})
+DB_FILE = ROOT / "server" / "data" / "db" / "purchase_docs.json"
 
 
-raw = pd.read_csv(args.csv, keep_default_na=False, na_values=[""]) if args.csv else read_mongo()
-source = f"file: {Path(args.csv).name}" if args.csv else "MongoDB (purchase_docs)"
+def read_db() -> pd.DataFrame:
+    rows = json.loads(DB_FILE.read_text())
+    cols = ["docType", "country", "product", "month", "qty"]
+    return pd.DataFrame([{k: r.get(k) for k in cols} for r in rows]).rename(columns={"docType": "record_type"})
+
+
+raw = pd.read_csv(args.csv, keep_default_na=False, na_values=[""]) if args.csv else read_db()
+source = f"file: {Path(args.csv).name}" if args.csv else "server/data/db/purchase_docs.json"
 orders, quality = load_orders(raw)
 panel = build_panel(orders)
 result = run(panel, horizon=args.horizon, quality=quality)

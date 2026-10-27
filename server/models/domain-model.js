@@ -1,20 +1,20 @@
-const mongoose = require("mongoose");
+const { Schema, model } = require("../db");
 
 // A "domain" is one kind of master record (Customer, Vendor, Item, Cost Center...).
 // Everything about it - the intake form, the required fields, the approval chain - is DATA in this collection,
 // so the MDM team can add a domain, change a field or add an approval step from the Admin screen without IT.
 
 // A rule such as { field: "isMedicalDevice", op: "eq", value: true }
-const ConditionSchema = new mongoose.Schema(
+const ConditionSchema = new Schema(
   {
     field: { type: String, required: true },
     op: { type: String, enum: ["eq", "neq", "in", "truthy", "gt", "gte", "lt"], default: "eq" },
-    value: mongoose.Schema.Types.Mixed,
+    value: Schema.Types.Mixed,
   },
   { _id: false },
 );
 
-const FieldSchema = new mongoose.Schema(
+const FieldSchema = new Schema(
   {
     key: { type: String, required: true, match: /^[a-zA-Z][a-zA-Z0-9_]*$/ },
     label: { type: String, required: true },
@@ -40,7 +40,7 @@ const FieldSchema = new mongoose.Schema(
   { _id: false },
 );
 
-const StepSchema = new mongoose.Schema(
+const StepSchema = new Schema(
   {
     key: { type: String, required: true },
     label: { type: String, required: true },
@@ -54,7 +54,7 @@ const StepSchema = new mongoose.Schema(
   { _id: false },
 );
 
-const DomainSchema = new mongoose.Schema(
+const DomainSchema = new Schema(
   {
     key: { type: String, required: true, unique: true, match: /^[a-z][a-z0-9-]*$/ },
     name: { type: String, required: true },
@@ -66,9 +66,9 @@ const DomainSchema = new mongoose.Schema(
     version: { type: Number, default: 1 },
     fields: [FieldSchema],
     steps: [StepSchema],
-    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true },
 );
 
-module.exports = mongoose.model("Domain", DomainSchema, "domains");
+module.exports = model("Domain", DomainSchema, "domains");

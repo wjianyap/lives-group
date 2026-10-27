@@ -1,5 +1,6 @@
 node_modules/
 config.env
+server/data/db/sessions.json
 dist/
 
 # Python

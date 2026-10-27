@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+const { Schema, model } = require("../db");
 const { ROLES, APPROVER_FUNCTIONS, ENTITIES, COUNTRIES } = require("../config/constants");
 
-const UserSchema = new mongoose.Schema(
+const UserSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -18,4 +18,4 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-module.exports = mongoose.model("User", UserSchema, "users");
+module.exports = model("User", UserSchema, "users");

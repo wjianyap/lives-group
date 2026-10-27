@@ -2,7 +2,7 @@
   "name": "lives-mdm-server",
   "version": "1.0.0",
   "private": true,
-  "description": "Express + MongoDB API for the Lives Group MDM & Regional Insights portal",
+  "description": "Express API for the Lives Group MDM & Regional Insights portal (JSON-file database in data/db)",
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
@@ -13,16 +13,19 @@
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
-    "connect-mongo": "^5.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "express-session": "^1.19.0",
-    "mongoose": "^8.19.2"
+    "express-session": "^1.19.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
   },
   "engines": {
     "node": ">=22"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "data/"
+    ]
   }
 }

@@ -8,7 +8,7 @@ All data in this prototype is synthetic: the figures show how the pipeline behav
 
 ```bash
 pip install -r requirements-forecast.txt
-python src/build_site_data.py                 # MongoDB (DB=... in server/config.env, read-only) -> server/data/ai-forecast.json
+python src/build_site_data.py                 # server/data/db/purchase_docs.json (read-only) -> server/data/ai-forecast.json
 python src/build_site_data.py --csv orders.csv  # or any order file, no database needed
 python src/run_forecast.py orders.csv           # same pipeline, prints tables, writes outputs/
 python -m pytest tests -q                       # 14 behaviour tests

@@ -1,11 +1,11 @@
-// Resets the portal database and loads demo data:
+// Resets the portal database (the JSON files in server/data/db) and loads demo data:
 //   users (the personas from the brief), domain configuration, SAP B1 master data (with realistic duplicates),
 //   24 months of SYNTHETIC purchase orders / RFQs / enquiries for 5 countries x Products A-C,
 //   MDM requests in every workflow state with back-dated, hash-chained audit history, and sample inbound emails.
 // Usage: npm run seed
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "..", "config.env") });
-const mongoose = require("mongoose");
+const store = require("../db/store");
 const bcrypt = require("bcryptjs");
 
 const User = require("../models/user-model");
@@ -161,12 +161,9 @@ const domainOf = (name) =>
   ".example";
 
 async function main() {
-  await mongoose.connect(process.env.DB, { dbName: process.env.DB_NAME || "lives_mdm" });
-  console.log(`Seeding database "${mongoose.connection.name}"...`);
-  for (const name of ["users", "domains", "master_records", "purchase_docs", "requests", "audit_log", "notifications", "inbound_messages", "counters", "sessions"]) {
-    await mongoose.connection.db.collection(name).deleteMany({});
-  }
-  await Promise.all([User, Domain, MasterRecord, PurchaseDoc, Request, Audit, Notification, InboundMessage].map((m) => m.syncIndexes()));
+  console.log(`Seeding ${store.dir} ...`);
+  for (const m of [User, Domain, MasterRecord, PurchaseDoc, Request, Audit, Notification, InboundMessage]) await m.deleteMany({});
+  for (const name of ["counters", "sessions"]) store.replace(name, []);
 
   // ---- users ----
   const hash = await bcrypt.hash(DEMO_PASSWORD, 10);
@@ -551,12 +548,11 @@ async function main() {
   }
   console.log(`  ${emails.length} inbound emails`);
 
-  await mongoose.disconnect();
+  store.flush();
   console.log("Done.");
 }
 
-main().catch(async (e) => {
+main().catch((e) => {
   console.error(e);
-  await mongoose.disconnect();
   process.exit(1);
 });

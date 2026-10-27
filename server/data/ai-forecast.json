@@ -1,7 +1,7 @@
 {
  "meta": {
   "generatedAt": "2026-10-27T00:07:54",
-  "source": "MongoDB (purchase_docs)",
+  "source": "server/data/db/purchase_docs.json",
   "horizonMonths": 6,
   "historyThrough": "2026-10",
   "monthsOfHistory": 24,

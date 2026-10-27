@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+const { Schema, model } = require("../db");
 const { REQUEST_STATUSES } = require("../config/constants");
 
-const ApprovalSchema = new mongoose.Schema(
+const ApprovalSchema = new Schema(
   {
     key: String,
     label: String,
@@ -13,7 +13,7 @@ const ApprovalSchema = new mongoose.Schema(
     startedAt: Date, // when it landed on the approver
     dueAt: Date, // startedAt + SLA
     actedAt: Date,
-    actedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    actedBy: { type: Schema.Types.ObjectId, ref: "User" },
     comment: String,
     remindersSent: { type: Number, default: 0 },
     escalated: { type: Boolean, default: false },
@@ -21,7 +21,7 @@ const ApprovalSchema = new mongoose.Schema(
   { _id: false },
 );
 
-const DuplicateSchema = new mongoose.Schema(
+const DuplicateSchema = new Schema(
   {
     source: { type: String, enum: ["master", "request"] },
     id: String,
@@ -35,7 +35,7 @@ const DuplicateSchema = new mongoose.Schema(
   { _id: false },
 );
 
-const RequestSchema = new mongoose.Schema(
+const RequestSchema = new Schema(
   {
     refNo: { type: String, required: true, unique: true },
     domainKey: { type: String, required: true, index: true },
@@ -43,16 +43,16 @@ const RequestSchema = new mongoose.Schema(
     title: { type: String, required: true }, // the record name, for lists
     entity: { type: String, required: true },
     country: String,
-    requester: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    requester: { type: Schema.Types.ObjectId, ref: "User", required: true },
     status: { type: String, enum: REQUEST_STATUSES, default: "draft", index: true },
-    data: { type: mongoose.Schema.Types.Mixed, default: {} }, // ordinary field values
-    secure: { type: mongoose.Schema.Types.Mixed, default: {} }, // sensitive values, each AES-256-GCM encrypted
+    data: { type: Schema.Types.Mixed, default: {} }, // ordinary field values
+    secure: { type: Schema.Types.Mixed, default: {} }, // sensitive values, each AES-256-GCM encrypted
     approvals: [ApprovalSchema],
     duplicates: [DuplicateSchema],
-    duplicateOverride: { reason: String, by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, at: Date },
+    duplicateOverride: { reason: String, by: { type: Schema.Types.ObjectId, ref: "User" }, at: Date },
     comments: [
       {
-        by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        by: { type: Schema.Types.ObjectId, ref: "User" },
         text: String,
         at: { type: Date, default: Date.now },
       },
@@ -67,4 +67,4 @@ const RequestSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-module.exports = mongoose.model("Request", RequestSchema, "requests");
+module.exports = model("Request", RequestSchema, "requests");

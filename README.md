@@ -3,17 +3,17 @@
 Prototype for the SMU DSA Data Case Competition 2026. All sales data is **synthetic**.
 
 - `client/` – Vue 3 + Vite (HTML, CSS, Vue)
-- `server/` – Express 5 + Mongoose (MongoDB)
+- `server/` – Express 5, with a JSON-file database in `server/data/db/` (one file per collection)
 - `_archive-heartware/` – the previous HeartWare project, moved aside untouched
 
 ## Run locally (Node 22+)
 
-1. `server/config.env` needs `DB=<mongodb connection string>` and `SECRET=<long random text>`
-   (optional: `DB_NAME` (default `lives_mdm`), `PORT` (default 8100), `FIELD_KEY`, `TEAMS_WEBHOOK_URL`).
+1. `server/config.env` needs `SECRET=<long random text>`
+   (optional: `PORT` (default 8100), `DATA_DIR` (default `server/data/db`), `FIELD_KEY`, `TEAMS_WEBHOOK_URL`).
 2. Server:
    ```
    cd server && npm install
-   npm run seed     # resets the lives_mdm database with demo data
+   npm run seed     # resets server/data/db with the demo data
    npm run dev      # http://localhost:8100
    ```
 3. Client (new terminal):
@@ -24,7 +24,12 @@ Prototype for the SMU DSA Data Case Competition 2026. All sales data is **synthe
 4. Sign in with any demo persona (password `Demo123!`), e.g. Amy (requestor), Wei Jie (Finance),
    Dr. Nok (QRA), Priya (MDM), Portal Admin.
 
-`npm test` in `server/` runs unit tests for duplicate matching, forecasting, the email classifier and field encryption.
+`npm test` in `server/` runs unit tests for duplicate matching, forecasting, the email classifier, field encryption and the JSON database.
+
+**The database is the JSON files in `server/data/db/`.** The server loads them at start-up and writes changes back within a moment.
+Using the app changes these files, so `git status` will show them; commit them to keep that data, or run
+`git checkout server/data/db` (or `npm run seed`) to go back to the clean demo data. Run only one server process per data folder.
+On Render's free plan the files reset to the committed version whenever the server restarts or redeploys.
 For one-origin hosting, `npm run build` in `client/` and the Express server serves `client/dist`.
 
 ## What it covers (brief section 5)
@@ -45,5 +50,5 @@ Assumption: the five countries are SG, MY, ID, TH, VN (see `server/config/consta
 
 ## Forecasting pipeline (Python)
 
-Orders in MongoDB -> self-checking forecaster -> `server/data/ai-forecast.json` -> Regional view. See [docs/FORECASTING.md](docs/FORECASTING.md).
+Orders (`server/data/db/purchase_docs.json`) -> self-checking forecaster -> `server/data/ai-forecast.json` -> Regional view. See [docs/FORECASTING.md](docs/FORECASTING.md).
 Refresh the forecast: `python src/build_site_data.py`.

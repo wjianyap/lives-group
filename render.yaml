@@ -11,9 +11,5 @@ services:
         value: production
       - key: NODE_VERSION
         value: "22"
-      - key: DB
-        sync: false
-      - key: DB_NAME
-        value: lives_mdm
       - key: SECRET
         generateValue: true

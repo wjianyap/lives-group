@@ -1,7 +1,6 @@
 // The approval engine. Approval chains come from the domain config, so changing a chain needs no code.
 // Steps that share a "stage" run in parallel: Finance and the BU Head review at the same time instead of
 // one after the other, which is where most of the 2-3 week wait came from.
-const mongoose = require("mongoose");
 const User = require("../models/user-model");
 const Notification = require("../models/notification-model");
 const { isTrue } = require("../utils/conditions");
@@ -136,7 +135,7 @@ exports.userCanAct = function (user, approval) {
 // In-app notification. If TEAMS_WEBHOOK_URL is set, the same message is also posted to a Teams channel, which is
 // how approvers who live in Outlook / Teams find out without opening the portal.
 exports.notify = async function (userIds, { kind = "update", message, link }) {
-  const ids = [...new Set(userIds.map(String))].filter((id) => mongoose.isValidObjectId(id));
+  const ids = [...new Set(userIds.filter(Boolean).map((id) => String(id._id || id)))];
   if (!ids.length) return;
   await Notification.insertMany(ids.map((user) => ({ user, kind, message, link })));
   if (process.env.TEAMS_WEBHOOK_URL) {

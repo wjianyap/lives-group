@@ -1,8 +1,8 @@
-const mongoose = require("mongoose");
+const { Schema, model } = require("../db");
 
-const NotificationSchema = new mongoose.Schema(
+const NotificationSchema = new Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", index: true },
     kind: { type: String, enum: ["action", "reminder", "escalation", "update", "completed"], default: "update" },
     message: String,
     link: String,
@@ -12,4 +12,4 @@ const NotificationSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-module.exports = mongoose.model("Notification", NotificationSchema, "notifications");
+module.exports = model("Notification", NotificationSchema, "notifications");

@@ -58,12 +58,13 @@ async function canonicalMap() {
 
 // order quantity series per country x product (and value), for `months`
 async function orderSeries(months) {
-  const rows = await PurchaseDoc.aggregate([
-    { $match: { docType: "order", month: { $in: months } } },
-    { $group: { _id: { c: "$country", p: "$product", m: "$month" }, qty: { $sum: "$qty" }, value: { $sum: "$valueUsd" } } },
-  ]);
+  const docs = await PurchaseDoc.find({ docType: "order", month: { $in: months } }).lean();
   const idx = {};
-  for (const r of rows) idx[`${r._id.c}|${r._id.p}|${r._id.m}`] = r;
+  for (const d of docs) {
+    const r = (idx[`${d.country}|${d.product}|${d.month}`] ||= { qty: 0, value: 0 });
+    r.qty += d.qty || 0;
+    r.value += d.valueUsd || 0;
+  }
   const get = (c, p, field) => months.map((m) => idx[`${c}|${p}|${m}`]?.[field] || 0);
   return { get };
 }
@@ -286,19 +287,17 @@ async function insights() {
 exports.pipeline = async function () {
   const end = await latestMonth();
   const months = monthRange(end, 12);
-  const rows = await PurchaseDoc.aggregate([
-    { $match: { month: { $in: months } } },
-    { $group: { _id: { c: "$country", t: "$docType" }, count: { $sum: 1 }, value: { $sum: "$valueUsd" } } },
-  ]);
-  const mdm = await Request.aggregate([
-    { $match: { status: { $ne: "draft" } } },
-    { $group: { _id: { c: "$country", d: "$domainKey", open: { $in: ["$status", ["pending", "changes_requested", "approved"]] } }, count: { $sum: 1 } } },
-  ]);
+  const docs = await PurchaseDoc.find({ month: { $in: months } }).lean();
+  const requests = await Request.find({ status: { $ne: "draft" } }).lean();
+  const isOpen = (r) => ["pending", "changes_requested", "approved"].includes(r.status);
 
   return COUNTRIES.map((c) => {
-    const get = (t) => rows.find((r) => r._id.c === c.code && r._id.t === t) || { count: 0, value: 0 };
-    const mdmFor = (open) => sum(mdm.filter((r) => r._id.c === c.code && r._id.open === open).map((r) => r.count));
-    const openCustomerSetups = sum(mdm.filter((r) => r._id.c === c.code && r._id.open && r._id.d === "customer").map((r) => r.count));
+    const get = (t) => {
+      const mine = docs.filter((d) => d.country === c.code && d.docType === t);
+      return { count: mine.length, value: sum(mine.map((d) => d.valueUsd || 0)) };
+    };
+    const mdmFor = (open) => requests.filter((r) => r.country === c.code && isOpen(r) === open).length;
+    const openCustomerSetups = requests.filter((r) => r.country === c.code && isOpen(r) && r.domainKey === "customer").length;
     return {
       country: c.code,
       orders: { count: get("order").count, valueUsd: Math.round(get("order").value) },
