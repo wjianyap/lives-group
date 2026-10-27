@@ -96,7 +96,7 @@ const chart = computed(() => {
 const allSeries = computed(() => ai.value?.series ?? []);
 const overall = computed(() => ai.value?.scorecard?.find((r) => r.group === "All series") ?? null);
 const sourceLabel = computed(
-  () => ({ "claude-pregenerated": "Written by Claude ahead of time", claude: "Live Claude", template: "Template (no AI)" })[ai.value?.commentary?.source] || "Commentary",
+  () => ({ "ai-pregenerated": "Written by AI ahead of time", ai: "Live AI", template: "Template (no AI)" })[ai.value?.commentary?.source] || "Commentary",
 );
 
 function choose(c, p) {
@@ -277,7 +277,7 @@ const recIcon = { grow: "trend", fix: "alert", retain: "users", "cross-sell": "s
     </div>
 
 
-    <!-- AI outlook: numbers from the statistical forecast, words from Claude, checked in code -->
+    <!-- AI outlook: numbers from the statistical forecast, words from the AI model, checked in code -->
     <div class="card mt16">
       <div class="card-head" style="flex-wrap: wrap">
         <div>

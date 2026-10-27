@@ -31,14 +31,14 @@ Honest evaluation: methods are chosen using only data before the last 6 months, 
 
 ## AI commentary
 
-Statistics produce the numbers. Claude explains them. The direction (up / down / flat, +/-3%) is computed in code and
+Statistics produce the numbers. An AI model explains them. The direction (up / down / flat, +/-3%) is computed in code and
 may not be changed; every number in the commentary must appear in the forecast bundle; calendar events are labelled as
 context, not findings; supply is expressed as checks, because the data has no stock or lead-time information.
 Failures fall back to a template, so the demo never depends on the network.
 
-- `outputs/commentary_pregenerated.json`: commentary written by Claude ahead of time for these exact numbers (no API key needed).
+- `outputs/commentary_pregenerated.json`: commentary written by AI ahead of time for these exact numbers (no API key needed).
   If the forecast changes, the saved text is detected as stale and ignored.
-- With `ANTHROPIC_API_KEY` in `.env`, `src/autoforecast/narrative.py` calls Claude live (untested against the live API so far).
+- With `ANTHROPIC_API_KEY` in `.env`, `src/autoforecast/narrative.py` calls the AI model live (untested against the live API so far).
 
 ## Results on the demo database (24 months, 15 series)
 

@@ -141,7 +141,7 @@ def test_stale_pregenerated_commentary_is_rejected(tmp_path, monkeypatch):
     r, facts = _result_and_facts()
     f = tmp_path / "c.json"
     f.write_text(json.dumps({"facts_hash": facts_hash(facts), "commentary": template_commentary(facts)}))
-    assert generate(r, pregenerated=str(f))["source"] == "claude-pregenerated"
+    assert generate(r, pregenerated=str(f))["source"] == "ai-pregenerated"
     f.write_text(json.dumps({"facts_hash": "0000", "commentary": template_commentary(facts)}))
     out = generate(r, pregenerated=str(f))
     assert out["source"] == "template" and "stale" in out["note"]

@@ -1,6 +1,6 @@
-"""Stage 7: the AI agent. The statistics decide the NUMBERS; Claude explains them, adds calendar context and drafts actions.
-Guardrails: (1) Claude only sees a facts bundle, (2) every direction (up/down/flat) is computed in code and Claude may not
-change it, (3) every number in Claude's text must trace back to the bundle, (4) any failure falls back to a plain template,
+"""Stage 7: the AI agent. The statistics decide the NUMBERS; the AI model explains them, adds calendar context and drafts actions.
+Guardrails: (1) the model only sees a facts bundle, (2) every direction (up/down/flat) is computed in code and the model may not
+change it, (3) every number in the model's text must trace back to the bundle, (4) any failure falls back to a plain template,
 so the demo never depends on the network."""
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import pandas as pd
 MODEL = "claude-opus-5-5"
 FLAT_BAND = 3.0  # +/- % change in next-6-month units vs last 6 months that we call "flat"
 
-# General calendar knowledge, NOT derived from the data. Shown to Claude as context only and labelled as such.
+# General calendar knowledge, NOT derived from the data. Shown to the model as context only and labelled as such.
 CALENDAR_CONTEXT = {
     "Singapore": "Chinese New Year 6 Feb 2027 (short working weeks around it); public-sector year-end is 31 Mar.",
     "Malaysia": "Chinese New Year 6 Feb 2027; Ramadan about 8 Feb - 9 Mar 2027, Hari Raya Aidilfitri about 10 Mar 2027 (slower ordering, then restocking).",
@@ -62,7 +62,7 @@ Hard rules:
 
 
 def build_facts(result, horizon: int = 6) -> dict:
-    """Everything Claude is allowed to see, with the direction decided here in code."""
+    """Everything the model is allowed to see, with the direction decided here in code."""
     s = result.summary.copy()
     fc = result.forecast
     series = []
@@ -96,7 +96,7 @@ def build_facts(result, horizon: int = 6) -> dict:
     }
 
 
-# ---------- guardrail: every number Claude writes must come from the bundle ----------
+# ---------- guardrail: every number the model writes must come from the bundle ----------
 def _numbers(text: str) -> list[float]:
     return [float(x.replace(",", "")) for x in re.findall(r"\d[\d,]*\.?\d*", text) if x.strip(".,")]
 
@@ -162,7 +162,7 @@ def template_commentary(facts: dict) -> dict:
     }
 
 
-def _call_claude(facts: dict, feedback: str = "") -> dict:
+def _call_ai(facts: dict, feedback: str = "") -> dict:
     import anthropic  # imported here so the rest of the package works without the SDK or a key
 
     client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from the environment / .env, never from code
@@ -185,7 +185,7 @@ def facts_hash(facts: dict) -> str:
 
 
 def _load_pregenerated(path, facts: dict):
-    """Commentary written ahead of time by Claude (no API key needed). Used only if it was written for exactly
+    """Commentary written ahead of time by AI (no API key needed). Used only if it was written for exactly
     these numbers and still passes the same checks as a live answer."""
     if not path or not os.path.exists(path):
         return None, "no pre-generated commentary file"
@@ -199,26 +199,26 @@ def _load_pregenerated(path, facts: dict):
 
 
 def generate(result, horizon: int = 6, use_ai: bool = True, pregenerated: str | None = None) -> dict:
-    """Return {'source': 'claude'|'claude-pregenerated'|'template', 'commentary': {...}, 'facts': {...}, 'note': str}."""
+    """Return {'source': 'ai'|'ai-pregenerated'|'template', 'commentary': {...}, 'facts': {...}, 'note': str}."""
     facts = build_facts(result, horizon)
     why_not = ""
     if use_ai and not os.environ.get("ANTHROPIC_API_KEY"):
         saved, why_not = _load_pregenerated(pregenerated, facts)
         if saved:
-            return {"source": "claude-pregenerated", "model": saved.get("model", "Claude"), "generated_on": saved.get("generated_on"),
+            return {"source": "ai-pregenerated", "model": saved.get("model", "AI"), "generated_on": saved.get("generated_on"),
                     "commentary": saved["commentary"], "facts": facts,
-                    "note": "Written by Claude ahead of time for these exact numbers; checked: directions and numbers match the forecast."}
+                    "note": "Written by AI ahead of time for these exact numbers; checked: directions and numbers match the forecast."}
     if use_ai and os.environ.get("ANTHROPIC_API_KEY"):
         feedback = ""
         for attempt in range(2):
             try:
-                c = _call_claude(facts, feedback)
+                c = _call_ai(facts, feedback)
             except Exception as e:  # network, auth, refusal, bad JSON: fall back rather than break the demo
                 return {"source": "template", "commentary": template_commentary(facts), "facts": facts,
                         "note": f"AI call failed ({type(e).__name__}); template used."}
             problems = check(c, facts)
             if not problems:
-                return {"source": "claude", "model": MODEL, "commentary": c, "facts": facts, "note": "Checked: directions and numbers match the forecast."}
+                return {"source": "ai", "model": MODEL, "commentary": c, "facts": facts, "note": "Checked: directions and numbers match the forecast."}
             feedback = "; ".join(problems)
         return {"source": "template", "commentary": template_commentary(facts), "facts": facts,
                 "note": f"AI output failed validation twice ({feedback}); template used."}
