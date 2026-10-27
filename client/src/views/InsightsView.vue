@@ -143,7 +143,7 @@ const recIcon = { grow: "trend", fix: "alert", retain: "users", "cross-sell": "s
       <div class="card kpi">
         <div class="label">Forecast error (back-test)</div>
         <div class="value">{{ overall ? overall.oursPct + "%" : "–" }}</div>
-        <div class="sub">vs {{ overall ? overall.currentPracticePct + "%" : "–" }} with the 6-month average · last 6 months, unseen when the method was chosen</div>
+        <div class="sub">vs {{ overall ? overall.currentPracticePct + "%" : "–" }} with the 6-month average · walk-forward test, method chosen only from data known at each date</div>
       </div>
       <div class="card kpi">
         <div class="label">Annual value at risk</div>
@@ -255,22 +255,25 @@ const recIcon = { grow: "trend", fix: "alert", retain: "users", "cross-sell": "s
             <p>
               Every series is tested by replaying history: forecast the next 3 months from many past dates, then compare with what really happened.
               A smarter model is used only if it beats the 6-month average by at least 10% in those tests; otherwise the average is kept.
-              The scores below are on the last 6 months, which were hidden when the method was chosen.
+              The method is re-chosen at each past date using only what was known then, so one lucky window cannot decide the score.
             </p>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Group</th><th class="num">6-month avg</th><th class="num">Ours</th><th class="num">No worse</th></tr></thead>
+                <thead><tr><th>Group</th><th class="num">6-month avg</th><th class="num">Ours</th><th class="num">Series no worse</th><th class="num">Past dates no worse</th><th class="num">Range hit</th></tr></thead>
                 <tbody>
                   <tr v-for="r in ai.scorecard" :key="r.group">
                     <td>{{ r.group }}</td>
                     <td class="num">{{ r.currentPracticePct }}%</td>
                     <td class="num strong">{{ r.oursPct }}%</td>
                     <td class="num muted">{{ r.noWorse }}</td>
+                    <td class="num muted">{{ r.datesNoWorse ?? "–" }}</td>
+                    <td class="num muted">{{ r.rangeCoveragePct != null ? r.rangeCoveragePct + "%" : "–" }}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <p class="muted">Error = total miss as a share of total units (lower is better). Click a cell or a row to see one series.</p>
+            <p class="muted">Error = total miss as a share of total units (lower is better). Range hit = how often the real result fell inside our 80% range (target 80%). Click a cell or a row to see one series.</p>
+            <p class="muted"><strong>Limits:</strong> only 24 months of history, so yearly seasonality cannot be confirmed; gains are modest and come mainly from Vietnam and Thailand; Product C is too lumpy to forecast and is flagged indicative; the data is synthetic.</p>
           </template>
         </div>
       </div>
