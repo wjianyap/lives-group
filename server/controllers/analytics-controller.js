@@ -10,9 +10,19 @@ exports.forecasts = async (req, res) => res.json(await analytics.forecasts());
 exports.insights = async (req, res) => res.json(await analytics.insights());
 exports.pipeline = async (req, res) => res.json(await analytics.pipeline());
 
+// Next-6-month forecast for one series. Prefers ai-forecast.json (the Python pipeline the Regional view shows),
+// so the recommendations quote the same numbers as the chart and the AI outlook; falls back to the JS forecast.
+function forecastFor(ai, fc, country, product) {
+  const s = ai?.series.find((x) => x.country === country && x.product === product);
+  if (s) return { next6: s.unitsNext6, average: s.unitsCurrentPractice, method: s.method.replace(" (current practice)", "") };
+  const f = fc.series.find((x) => x.country === country && x.product === product);
+  return { next6: f.nextHalfUnits, average: f.baselineForecast.reduce((a, b) => a + b, 0), method: f.best };
+}
+
 // Plain-language actions built from the numbers, for the business view
 exports.recommendations = async (req, res) => {
-  const [regional, fc, ins] = await Promise.all([analytics.regional({}), analytics.forecasts(), analytics.insights()]);
+  const ai = readAiForecast();
+  const [regional, fc, ins] = await Promise.all([analytics.regional({}), ai ? null : analytics.forecasts(), analytics.insights()]);
   const recs = [];
   // equipment (C) volumes are small and lumpy, so growth calls are made on reagents and consumables
   const cells = regional.matrix.filter((r) => r.growthYoY !== null && r.product !== "C");
@@ -20,14 +30,14 @@ exports.recommendations = async (req, res) => {
   const bottom = [...cells].sort((a, b) => a.growthYoY - b.growthYoY).slice(0, 2);
 
   for (const t of top) {
-    const f = fc.series.find((s) => s.country === t.country && s.product === t.product);
-    const gap = f.nextHalfUnits - f.baselineForecast.reduce((a, b) => a + b, 0);
+    const f = forecastFor(ai, fc, t.country, t.product);
+    const gap = f.next6 - f.average;
     recs.push({
       kind: "grow",
       title: `Back the growth in ${countryName(t.country)} – ${productName(t.product)} (+${t.growthYoY}% year-on-year)`,
       detail:
-        `Forecast for the next 6 months is ${f.nextHalfUnits.toLocaleString()} units. Secure supplier allocation and stock now` +
-        (gap > 0 ? `; planning on the 6-month average alone would under-order by ${gap.toLocaleString()} units.` : "."),
+        `Forecast for the next 6 months is ${f.next6.toLocaleString("en-US")} units (${f.method}). Secure supplier allocation and stock now` +
+        (gap > 0 ? `; planning on the 6-month average (${f.average.toLocaleString("en-US")} units) would under-order by ${gap.toLocaleString("en-US")} units.` : "."),
     });
   }
   for (const b of bottom.filter((x) => x.growthYoY < 0)) {
@@ -55,7 +65,6 @@ exports.recommendations = async (req, res) => {
       detail: "Peers in the same segment who buy the same products already buy it. Give the list to regional sales as a quarterly campaign.",
     });
   }
-  const ai = readAiForecast();
   const all = ai?.scorecard?.find((r) => r.group === "All series");
   if (all) {
     recs.push({
