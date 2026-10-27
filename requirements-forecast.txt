@@ -5,5 +5,5 @@ pymongo
 dnspython
 certifi
 python-dotenv
-anthropic   # only needed for the optional live AI commentary
+anthropic   # only needed for the optional live Claude commentary
 pytest
