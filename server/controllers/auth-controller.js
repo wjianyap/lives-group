@@ -36,13 +36,6 @@ exports.logout = (req, res) => {
 
 exports.me = (req, res) => res.json(publicUser(req.user));
 
-// Demo personas for the login screen (turn off with DEMO_LOGIN=false)
-exports.demoUsers = async (req, res) => {
-  if (process.env.DEMO_LOGIN === "false") return res.json([]);
-  const users = await User.find({ email: /@demo\.livesgroup\.test$/ }).sort({ role: 1, name: 1 }).lean();
-  res.json(users.map(publicUser));
-};
-
 exports.list = async (req, res) => {
   const users = await User.find().sort({ role: 1, name: 1 }).lean();
   res.json(users.map(publicUser));

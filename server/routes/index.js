@@ -16,7 +16,6 @@ const staff = requireRole("mdm", "admin");
 router.post("/auth/login", auth.login);
 router.post("/auth/logout", auth.logout);
 router.get("/auth/me", requireLogin, auth.me);
-router.get("/auth/demo-users", auth.demoUsers);
 router.get("/users", requireLogin, staff, auth.list);
 
 // ---- reference data ----

@@ -1,7 +1,6 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { api } from "../api";
 import { login } from "../session";
 
 const route = useRoute();
@@ -10,17 +9,6 @@ const email = ref("");
 const password = ref("");
 const error = ref("");
 const busy = ref(false);
-const personas = ref([]);
-
-const groups = computed(() => [
-  { title: "Requestors", hint: "raise new customers, items, vendors", users: personas.value.filter((u) => u.role === "requestor") },
-  { title: "Approvers", hint: "Finance, QRA, BU Heads, Business Support", users: personas.value.filter((u) => u.role === "approver") },
-  { title: "MDM team", hint: "final check, create in SAP B1, configure", users: personas.value.filter((u) => ["mdm", "admin"].includes(u.role)) },
-]);
-
-onMounted(async () => {
-  personas.value = await api.get("/auth/demo-users").catch(() => []);
-});
 
 async function signIn(e = email.value, p = password.value) {
   busy.value = true;
@@ -63,23 +51,6 @@ async function signIn(e = email.value, p = password.value) {
         <button class="btn primary" :disabled="busy">Sign in</button>
       </form>
 
-      <template v-if="personas.length">
-        <div class="divider mt16"></div>
-        <h3>Or try a demo persona</h3>
-        <p class="muted small">Password for all: <code>Demo123!</code></p>
-        <div v-for="g in groups" :key="g.title" class="mt16">
-          <div class="small strong">{{ g.title }} <span class="muted">– {{ g.hint }}</span></div>
-          <div class="personas">
-            <button v-for="u in g.users" :key="u._id" class="persona" :disabled="busy" @click="signIn(u.email, 'Demo123!')">
-              <span class="pa">{{ u.name.split(" ").map((w) => w[0]).slice(0, 2).join("") }}</span>
-              <span>
-                <strong>{{ u.name }}</strong>
-                <span class="muted small">{{ u.title }}</span>
-              </span>
-            </button>
-          </div>
-        </div>
-      </template>
     </section>
   </div>
 </template>
@@ -93,16 +64,10 @@ async function signIn(e = email.value, p = password.value) {
 .brand-row { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 16px; }
 .mark { width: 36px; height: 36px; border-radius: 9px; background: rgba(255, 255, 255, 0.15); display: grid; place-items: center; font-weight: 700; }
 .panel { padding: 48px 56px; max-width: 620px; width: 100%; background: var(--surface); overflow-y: auto; }
-.personas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
-.persona { display: flex; align-items: center; gap: 10px; text-align: left; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; background: #fff; cursor: pointer; font: inherit; }
-.persona:hover { border-color: var(--brand); background: var(--brand-50); }
-.persona > span:last-child { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
-.pa { width: 30px; height: 30px; flex: none; border-radius: 99px; background: var(--brand-50); color: var(--brand); display: grid; place-items: center; font-weight: 700; font-size: 12px; }
 @media (max-width: 900px) {
   .login { grid-template-columns: 1fr; }
   .hero { padding: 28px 16px; }
   .hero h1 { font-size: 22px; }
   .panel { padding: 24px 16px; }
-  .personas { grid-template-columns: 1fr; }
 }
 </style>
