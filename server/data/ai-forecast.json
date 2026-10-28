@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generatedAt": "2026-10-27T17:55:57",
+  "generatedAt": "2026-10-27T00:07:54",
   "source": "MongoDB (purchase_docs)",
   "horizonMonths": 6,
   "historyThrough": "2026-10",
@@ -30,10 +30,9 @@
    "series": 15,
    "currentPracticePct": 12.4,
    "avg12Pct": 13.3,
-   "oursPct": 11.8,
-   "noWorse": "14/15",
-   "datesNoWorse": "56/60",
-   "rangeCoveragePct": 76
+   "oursPct": 11.7,
+   "noWorse": "15/15",
+   "rangeCoveragePct": 74
   },
   {
    "group": "Product A",
@@ -42,18 +41,16 @@
    "avg12Pct": 14.0,
    "oursPct": 12.6,
    "noWorse": "5/5",
-   "datesNoWorse": "20/20",
-   "rangeCoveragePct": 75
+   "rangeCoveragePct": 73
   },
   {
    "group": "Product B",
    "series": 5,
    "currentPracticePct": 12.1,
    "avg12Pct": 12.8,
-   "oursPct": 11.4,
-   "noWorse": "4/5",
-   "datesNoWorse": "16/20",
-   "rangeCoveragePct": 63
+   "oursPct": 11.2,
+   "noWorse": "5/5",
+   "rangeCoveragePct": 60
   },
   {
    "group": "Product C",
@@ -62,7 +59,6 @@
    "avg12Pct": 42.2,
    "oursPct": 35.8,
    "noWorse": "5/5",
-   "datesNoWorse": "20/20",
    "rangeCoveragePct": 88
   }
  ],
@@ -1814,7 +1810,7 @@
     },
     {
      "action": "Re-run the forecast each month and compare it with what actually arrived.",
-     "rationale": "Walk-forward tests over many past dates show 11.8% error against 12.4% for today's 6-month average. The edge is modest, so tracking real results is how we keep it honest."
+     "rationale": "Past tests show 11.7% error against 12.4% for today's 6-month average. The edge is modest, so tracking real results is how we keep it honest."
     }
    ],
    "supply_notes": [

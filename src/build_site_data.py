@@ -76,7 +76,6 @@ scorecard = [] if sc.empty else [{
     "avg12Pct": round(100 * float(r["12-month average (current practice)"]), 1),
     "oursPct": round(100 * float(r["Self-checking forecaster"]), 1),
     "noWorse": r["series where ours is no worse than 6-month avg"],
-    "datesNoWorse": r.get("past dates where ours was no worse"),
     "rangeCoveragePct": None if pd.isna(r["80% range covered the actuals"]) else round(100 * float(r["80% range covered the actuals"])),
 } for _, r in sc.iterrows()]
 

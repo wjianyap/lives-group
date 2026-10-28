@@ -1,5 +1,5 @@
 {
- "facts_hash": "5ace176a7702c547",
+ "facts_hash": "79ba526459dc11c3",
  "model": "Claude (written in Claude Code, not a live API call)",
  "generated_on": "2026-10-27",
  "commentary": {
@@ -138,7 +138,7 @@
    },
    {
     "action": "Re-run the forecast each month and compare it with what actually arrived.",
-    "rationale": "Walk-forward tests over many past dates show 11.8% error against 12.4% for today's 6-month average. The edge is modest, so tracking real results is how we keep it honest."
+    "rationale": "Past tests show 11.7% error against 12.4% for today's 6-month average. The edge is modest, so tracking real results is how we keep it honest."
    }
   ],
   "supply_notes": [
