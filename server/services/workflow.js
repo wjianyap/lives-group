@@ -68,7 +68,12 @@ exports.values = function (domain, request, reveal) {
   for (const f of domain.fields.filter((x) => x.sensitive)) {
     const box = request.secure?.[f.key];
     if (!box) continue;
-    out[f.key] = reveal ? crypto.decrypt(box) : crypto.mask(crypto.decrypt(box));
+    try {
+      out[f.key] = reveal ? crypto.decrypt(box) : crypto.mask(crypto.decrypt(box));
+    } catch {
+      // encrypted with a different FIELD_KEY (or tampered with): show that, rather than failing the whole page
+      out[f.key] = "•••• unreadable (encryption key mismatch)";
+    }
   }
   return out;
 };

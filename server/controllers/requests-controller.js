@@ -162,7 +162,13 @@ async function applyBody(r, body, user, domain) {
 function valuesForValidation(domain, r, body) {
   const v = { ...(body.data || {}) };
   for (const f of domain.fields.filter((x) => x.sensitive)) {
-    if ((v[f.key] === undefined || v[f.key] === "") && r.secure?.[f.key]) v[f.key] = fieldCrypto.decrypt(r.secure[f.key]);
+    if ((v[f.key] === undefined || v[f.key] === "") && r.secure?.[f.key]) {
+      try {
+        v[f.key] = fieldCrypto.decrypt(r.secure[f.key]);
+      } catch {
+        v[f.key] = "(encrypted)"; // stored but unreadable here: still counts as filled in
+      }
+    }
   }
   return v;
 }

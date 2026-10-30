@@ -2,10 +2,12 @@
 // database - or in an email - as plain text. AES-256-GCM also detects tampering (decrypt fails).
 const crypto = require("crypto");
 
+// FIELD_KEY only, never the session SECRET: the data in server/data/db is committed and must decrypt on every host,
+// while SECRET differs per host (Render generates its own). Set FIELD_KEY in production and seed with the same value.
 let cachedKey = null;
 function key() {
   if (!cachedKey) {
-    const secret = process.env.FIELD_KEY || process.env.SECRET || "dev-only-secret-change-me";
+    const secret = process.env.FIELD_KEY || "dev-only-secret-change-me";
     cachedKey = crypto.scryptSync(secret, "lives-mdm-field-encryption", 32);
   }
   return cachedKey;
